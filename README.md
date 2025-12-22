@@ -374,7 +374,99 @@ logger.error("Failed to send message")
 logger.debug("Processing callback: %s", callback_data)
 ```
 
-### 9. Advanced Features
+### 9. Working with Complex Context Objects
+
+You can pass entire objects (like database models, dataclasses, or dictionaries) into context and access their attributes in JSON templates:
+
+```python
+from dataclasses import dataclass
+from datetime import datetime
+
+@dataclass
+class UserData:
+    username: str
+    balance: float
+    level: int
+    created_at: datetime
+    is_premium: bool
+
+# Get user from database
+user_data = await db.get_user(user_id)  # Returns UserData object
+
+# Pass entire object to context
+await SmartMessageRenderer.send(
+    engine=msg_engine,
+    source=message,
+    role="user",
+    namespace="main",
+    menu_file="profile",
+    block_key="detailed_view",
+    lang="en",
+    context={
+        "user_data": user_data,  # Pass entire object
+        "current_date": datetime.now()
+    }
+)
+```
+
+Example JSON template (`profile.json`):
+```json
+{
+  "detailed_view": {
+    "text": "👤 Profile: {user_data.username}\n💰 Balance: ${user_data.balance:.2f}\n⭐ Level: {user_data.level}\n📅 Member since: {user_data.created_at:%Y-%m-%d}\n{'✨ Premium' if user_data.is_premium else '🆓 Free'}",
+    "buttons": [
+      [
+        {"type": "callback", "text": "Top Up Balance", "data": "topup_{user_data.username}"},
+        {"type": "callback", "text": "Upgrade", "data": "upgrade_{user_data.level}"}
+      ]
+    ]
+  }
+}
+```
+
+**Supported context types:**
+- ✅ Dataclasses and Pydantic models
+- ✅ Database ORM objects (SQLAlchemy, Tortoise ORM, etc.)
+- ✅ Nested dictionaries
+- ✅ Custom classes with `__dict__`
+- ✅ DateTime objects with formatting
+
+**Advanced formatting examples:**
+
+```python
+# Nested objects
+context = {
+    "user": {
+        "profile": {
+            "name": "John",
+            "settings": {
+                "theme": "dark"
+            }
+        }
+    }
+}
+# In JSON: "Welcome, {user.profile.name}! Theme: {user.profile.settings.theme}"
+
+# Lists and indexing
+context = {
+    "items": ["Apple", "Banana", "Orange"]
+}
+# In JSON: "First item: {items[0]}"
+
+# Number formatting
+context = {
+    "price": 1234.5678
+}
+# In JSON: "Price: ${price:.2f}"  → "Price: $1234.57"
+
+# Date formatting
+context = {
+    "date": datetime(2025, 1, 15)
+}
+# In JSON: "Date: {date:%B %d, %Y}"  → "Date: January 15, 2025"
+```
+
+### 10. Advanced Features
 
 #### Extra Keyboard Buttons
 
