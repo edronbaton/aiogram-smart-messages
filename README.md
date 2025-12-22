@@ -1,8 +1,11 @@
+```markdown
 # aiogram-smart-messages
 
 **Smart message renderer for Aiogram** - A powerful toolkit for building sophisticated Telegram bots with JSON-based message templates, dynamic keyboards, and robust error handling.
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/aiogram-smart-messages.svg)](https://pypi.org/project/aiogram-smart-messages/)
+[![Downloads](https://img.shields.io/pypi/dm/aiogram-smart-messages.svg)](https://pypi.org/project/aiogram-smart-messages/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Aiogram](https://img.shields.io/badge/aiogram-3.x-blue.svg)](https://docs.aiogram.dev/)
 
@@ -16,6 +19,7 @@
 - 🛡️ **Error handling** - Comprehensive logging with customizable decorators
 - 📦 **Type-safe** - Full type hints for better IDE support
 - ⚡ **Async-first** - Built for modern async/await patterns
+- 🔌 **Middleware support** - Easy integration with Aiogram dispatcher
 
 ## 📋 Requirements
 
@@ -28,24 +32,62 @@
 pip install aiogram-smart-messages
 ```
 
+Or install from source:
+
+```bash
+git clone https://github.com/yourusername/aiogram-smart-messages.git
+cd aiogram-smart-messages
+pip install -e .
+```
+
 ## 📚 Quick Start
 
-### 1. Basic Setup
+### 1. Basic Setup with Middleware (Recommended)
+
+```python
+from aiogram import Bot, Dispatcher
+from aiogram.types import Message
+from aiogram_smart_messages.middleware import MessageEngineMiddleware
+from aiogram_smart_messages.renderer.bot_messages import SmartMessageRenderer
+from aiogram_smart_messages.logger import get_logger
+
+# Initialize bot and dispatcher
+bot = Bot(token="YOUR_BOT_TOKEN")
+dp = Dispatcher()
+logger = get_logger("my_bot")
+
+# Register middleware
+dp.message.middleware(MessageEngineMiddleware(bot))
+dp.callback_query.middleware(MessageEngineMiddleware(bot))
+
+# Now msg_engine is automatically available in handlers
+@dp.message(commands=["start"])
+async def cmd_start(message: Message, msg_engine):
+    await SmartMessageRenderer.send(
+        engine=msg_engine,
+        source=message,
+        role="user",
+        namespace="main",
+        menu_file="welcome",
+        block_key="greeting",
+        lang="en",
+        context={"username": message.from_user.first_name}
+    )
+```
+
+### 2. Alternative: Manual Setup
 
 ```python
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
 from aiogram_smart_messages.message_engine import MessageEngine
 from aiogram_smart_messages.renderer.bot_messages import SmartMessageRenderer
-from aiogram_smart_messages.logger import get_logger
 
-# Initialize bot and logger
+# Initialize bot and engine manually
 bot = Bot(token="YOUR_BOT_TOKEN")
 dp = Dispatcher()
-logger = get_logger("my_bot")
 engine = MessageEngine(bot)
 
-# Send a simple message
 @dp.message(commands=["start"])
 async def cmd_start(message: Message):
     await SmartMessageRenderer.send(
@@ -60,18 +102,19 @@ async def cmd_start(message: Message):
     )
 ```
 
-### 2. JSON Message Structure
+### 3. JSON Message Structure
 
 Create message files in your project structure:
 ```
 my_bot/
-├── main/
-│   ├── messages/
-│   │   ├── user/
-│   │   │   ├── en/
-│   │   │   │   └── welcome.json
-│   │   │   └── ru/
-│   │   │       └── welcome.json
+├── messages/
+│   ├── user/
+│   │   ├── en/
+│   │   │   └── welcome.json
+│   │   └── ru/
+│   │       └── welcome.json
+│   └── admin/
+│       └── ...
 ```
 
 Example `welcome.json`:
@@ -103,17 +146,51 @@ Example `welcome.json`:
 }
 ```
 
-### 3. Advanced Usage
-
-#### Send with Context Variables
+### 4. Using Middleware in All Handlers
 
 ```python
+from aiogram.types import CallbackQuery
 from aiogram_smart_messages.decorators import with_error_logging
 
-@with_error_logging(logger=logger, error_label="WELCOME_MESSAGE")
-async def send_personalized_welcome(message: Message, user_data: dict):
+# Message handler with middleware
+@dp.message(commands=["profile"])
+async def show_profile(message: Message, msg_engine):
+    user_data = await get_user_data(message.from_user.id)
+    
     await SmartMessageRenderer.send(
-        engine=engine,
+        engine=msg_engine,
+        source=message,
+        role="user",
+        namespace="main",
+        menu_file="profile",
+        block_key="view",
+        lang="en",
+        context={
+            "username": user_data["name"],
+            "balance": user_data["balance"],
+            "level": user_data["level"]
+        }
+    )
+
+# Callback handler with middleware
+@dp.callback_query(lambda c: c.data == "settings")
+async def show_settings(callback: CallbackQuery, msg_engine):
+    await SmartMessageRenderer.edit(
+        engine=msg_engine,
+        source=callback,
+        role="user",
+        namespace="main",
+        menu_file="settings",
+        block_key="main",
+        lang="en"
+    )
+    await callback.answer()
+
+# Error handling with decorator
+@with_error_logging(logger=logger, error_label="WELCOME_MESSAGE")
+async def send_personalized_welcome(message: Message, msg_engine, user_data: dict):
+    await SmartMessageRenderer.send(
+        engine=msg_engine,
         source=message,
         role="user",
         namespace="main",
@@ -122,21 +199,20 @@ async def send_personalized_welcome(message: Message, user_data: dict):
         lang=user_data.get("language", "en"),
         context={
             "username": user_data["name"],
-            "balance": user_data["balance"],
-            "level": user_data["level"]
+            "balance": user_data["balance"]
         }
     )
 ```
 
+### 5. Advanced Usage
+
 #### Edit Messages
 
 ```python
-from aiogram.types import CallbackQuery
-
 @dp.callback_query(lambda c: c.data == "settings")
-async def show_settings(callback: CallbackQuery):
+async def show_settings(callback: CallbackQuery, msg_engine):
     await SmartMessageRenderer.edit(
-        engine=engine,
+        engine=msg_engine,
         source=callback,
         role="user",
         namespace="main",
@@ -153,11 +229,11 @@ Automatically decides whether to edit or resend based on media content:
 
 ```python
 @dp.callback_query(lambda c: c.data.startswith("view_"))
-async def view_item(callback: CallbackQuery):
+async def view_item(callback: CallbackQuery, msg_engine):
     item_id = callback.data.split("_")[1]
     
     await SmartMessageRenderer.smart_edit_or_send(
-        engine=engine,
+        engine=msg_engine,
         source=callback,
         role="user",
         namespace="shop",
@@ -172,9 +248,9 @@ async def view_item(callback: CallbackQuery):
 
 ```python
 @dp.message(lambda m: m.text and "help" in m.text.lower())
-async def help_reply(message: Message):
+async def help_reply(message: Message, msg_engine):
     await SmartMessageRenderer.reply(
-        engine=engine,
+        engine=msg_engine,
         source=message,
         role="user",
         namespace="main",
@@ -190,20 +266,19 @@ async def help_reply(message: Message):
 from aiogram.types import FSInputFile
 
 @dp.callback_query(lambda c: c.data == "download_report")
-async def send_report(callback: CallbackQuery):
+async def send_report(callback: CallbackQuery, msg_engine):
     doc = FSInputFile("reports/monthly_report.pdf")
     
     await SmartMessageRenderer.send_document(
-        engine=engine,
+        engine=msg_engine,
         source=callback.message.chat.id,
         document=doc,
-        caption="Your monthly report",
-        custom_markup=None
+        caption="Your monthly report"
     )
     await callback.answer("Report sent!")
 ```
 
-### 4. Building Keyboards Manually
+### 6. Building Keyboards Manually
 
 ```python
 from aiogram_smart_messages.builder import KeyboardBuilder
@@ -232,7 +307,7 @@ reply_kb = KeyboardBuilder.build_reply_keyboard(
 )
 ```
 
-### 5. Using Decorators
+### 7. Using Decorators
 
 #### Error Logging Decorator
 
@@ -277,7 +352,7 @@ async def fetch_external_api():
     return response.json()
 ```
 
-### 6. Logger Configuration
+### 8. Logger Configuration
 
 ```python
 from aiogram_smart_messages.logger import get_logger
@@ -300,7 +375,7 @@ logger.error("Failed to send message")
 logger.debug("Processing callback: %s", callback_data)
 ```
 
-### 7. Advanced Features
+### 9. Advanced Features
 
 #### Extra Keyboard Buttons
 
@@ -312,7 +387,7 @@ extra_buttons = [
 ]
 
 await SmartMessageRenderer.send(
-    engine=engine,
+    engine=msg_engine,
     source=message,
     role="user",
     namespace="main",
@@ -337,7 +412,7 @@ custom_block = {
 }
 
 await SmartMessageRenderer.send(
-    engine=engine,
+    engine=msg_engine,
     source=message,
     role="user",
     override_block=custom_block
@@ -356,7 +431,7 @@ custom_keyboard = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 await SmartMessageRenderer.send(
-    engine=engine,
+    engine=msg_engine,
     source=message,
     role="user",
     namespace="main",
@@ -366,6 +441,37 @@ await SmartMessageRenderer.send(
     custom_markup=custom_keyboard
 )
 ```
+
+## 🔌 Middleware
+
+### MessageEngineMiddleware
+
+The library includes a convenient middleware that automatically injects `MessageEngine` into your handlers.
+
+```python
+from aiogram_smart_messages.middleware import MessageEngineMiddleware
+
+# Register for messages
+dp.message.middleware(MessageEngineMiddleware(bot))
+
+# Register for callback queries
+dp.callback_query.middleware(MessageEngineMiddleware(bot))
+
+# Now use msg_engine in handlers
+@dp.message(commands=["start"])
+async def cmd_start(message: Message, msg_engine):
+    await SmartMessageRenderer.send(
+        engine=msg_engine,
+        source=message,
+        # ... other parameters
+    )
+```
+
+**Benefits:**
+- ✅ No need to create `MessageEngine` manually in each handler
+- ✅ Cleaner code organization
+- ✅ Consistent engine instance across all handlers
+- ✅ Easy to test and mock
 
 ## 🎯 Supported Button Types
 
@@ -384,25 +490,24 @@ await SmartMessageRenderer.send(
 ```
 my_bot/
 ├── main_bot/
-│   ├── main/
-│   │   ├── messages/
-│   │   │   ├── user/
-│   │   │   │   ├── en/
-│   │   │   │   │   ├── welcome.json
-│   │   │   │   │   ├── menu.json
-│   │   │   │   │   └── settings.json
-│   │   │   │   └── ru/
-│   │   │   │       └── ... (same structure)
-│   │   │   └── admin/
-│   │   │       └── ... (admin messages)
-│   │   └── photos/
-│   │       ├── user/
-│   │       │   ├── en/
-│   │       │   │   └── menu_photo.jpg
-│   │       │   └── ru/
-│   │       │       └── menu_photo.jpg
-│   │       └── admin/
-│   │           └── ...
+│   ├── messages/
+│   │   ├── user/
+│   │   │   ├── en/
+│   │   │   │   ├── welcome.json
+│   │   │   │   ├── menu.json
+│   │   │   │   └── settings.json
+│   │   │   └── ru/
+│   │   │       └── ... (same structure)
+│   │   └── admin/
+│   │       └── ... (admin messages)
+│   ├── photos/
+│   │   ├── user/
+│   │   │   ├── en/
+│   │   │   │   └── menu_photo.jpg
+│   │   │   └── ru/
+│   │   │       └── menu_photo.jpg
+│   │   └── admin/
+│   │       └── ...
 ├── main.py
 └── requirements.txt
 ```
@@ -415,6 +520,10 @@ The library uses the following configuration structure:
 - `role` - User role (e.g., "user", "admin", "common")
 - `lang` - Language code (e.g., "en", "ru", "es")
 
+**File paths:**
+- Messages: `{module}/messages/{role}/{lang}/{menu_file}.json`
+- Photos: `{module}/{namespace}/photos/{role}/{lang}/{photo_file}`
+
 ## 🐛 Error Handling
 
 The library provides comprehensive error handling with clear labels:
@@ -425,6 +534,8 @@ The library provides comprehensive error handling with clear labels:
 # - EDIT_SMART_MESSAGE  
 # - REPLY_SMART_MESSAGE
 # - SEND_DOCUMENT
+# - LOAD_JSON
+# - PARSE_TO_SMART
 
 # Custom error handling
 @with_error_logging(
@@ -462,6 +573,16 @@ Core engine for message operations.
 - `reply_smart_message()` - Reply with SmartMessage
 - `send_document()` - Send document
 
+### MessageEngineMiddleware
+
+Middleware for automatic MessageEngine injection.
+
+```python
+class MessageEngineMiddleware(BaseMiddleware):
+    def __init__(self, bot: Bot):
+        # Initializes MessageEngine with bot instance
+```
+
 ### KeyboardBuilder
 
 Utility for building keyboards.
@@ -480,22 +601,24 @@ MIT License © 2025 Kriva
 
 ## 🔗 Links
 
+- [PyPI Package](https://pypi.org/project/aiogram-smart-messages/)
 - [Aiogram Documentation](https://docs.aiogram.dev/)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 
 ## 💡 Tips
 
-1. **Organize messages by feature** - Use namespaces to separate different bot sections
-2. **Use context variables** - Make messages dynamic and personalized
-3. **Leverage smart_edit_or_send** - Let the library decide the best update method
-4. **Add error labels** - Make debugging easier with descriptive error labels
-5. **Cache static content** - Messages without context are automatically cached
-6. **Use type hints** - Full type support for better IDE experience
+1. **Use middleware** - Register `MessageEngineMiddleware` for cleaner code
+2. **Organize messages by feature** - Use namespaces to separate different bot sections
+3. **Use context variables** - Make messages dynamic and personalized
+4. **Leverage smart_edit_or_send** - Let the library decide the best update method
+5. **Add error labels** - Make debugging easier with descriptive error labels
+6. **Cache static content** - Messages without context are automatically cached
+7. **Use type hints** - Full type support for better IDE experience
 
 ## 🎓 Examples
 
 Check out more examples in the `/examples` directory:
-- Basic bot setup
+- Basic bot setup with middleware
 - Multi-language support
 - E-commerce bot
 - Admin panel
@@ -504,3 +627,4 @@ Check out more examples in the `/examples` directory:
 ---
 
 Made with ❤️ for the Aiogram community
+```
