@@ -1,4 +1,3 @@
-```markdown
 # aiogram-smart-messages
 
 **Smart message renderer for Aiogram** - A powerful toolkit for building sophisticated Telegram bots with JSON-based message templates, dynamic keyboards, and robust error handling.
@@ -627,4 +626,3 @@ Check out more examples in the `/examples` directory:
 ---
 
 Made with ❤️ for the Aiogram community
-```
