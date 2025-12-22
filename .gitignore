@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+aiogram_smart_messages.egg-info
 *.egg-info/
 # C extensions
 *.so
@@ -163,4 +164,4 @@ tmp/
 
 # OS specific
 Thumbs.db
-Desktop.ini
+Desktop.ini*.egg-info/
