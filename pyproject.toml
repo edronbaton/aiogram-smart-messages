@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiogram-smart-messages"      # имя для pip install
-version = "0.2.0"
+version = "0.3.0"
 description = "Smart message renderer for Aiogram with keyboard builder and JSON loader"
 readme = "README.md"
 license = {text = "MIT"}

@@ -13,6 +13,7 @@
 - 🎯 **JSON-based message templates** - Organize messages by namespace, role, and language
 - ⌨️ **Advanced keyboard builder** - Create inline and reply keyboards with WebApp support
 - 🔄 **Smart message operations** - Send, edit, reply with automatic method selection
+- 📬 **Notificator service** - High-level API for sending notifications to users
 - 🌍 **Multi-language support** - Built-in localization system
 - 🎨 **Context formatting** - Dynamic message content with variable substitution
 - 🛡️ **Error handling** - Comprehensive logging with customizable decorators
@@ -101,7 +102,45 @@ async def cmd_start(message: Message):
     )
 ```
 
-### 3. JSON Message Structure
+### 3. Using NotificatorService
+
+For sending notifications to users (e.g., from background tasks, admin panels, or scheduled jobs):
+
+```python
+from aiogram import Bot
+from aiogram_smart_messages import NotificatorService
+
+bot = Bot(token="YOUR_BOT_TOKEN")
+
+# Send notification to specific user
+async def notify_user(user_id: int):
+    notificator = NotificatorService(user_id=user_id, bot=bot)
+
+    # Simple text notification
+    await notificator.notify_message(
+        text="Your order has been processed!"
+    )
+
+    # Or use smart message with JSON template
+    await notificator.notify_message(
+        smart_data={
+            "role": "user",
+            "namespace": "shop",
+            "menu_file": "orders",
+            "block_key": "order_complete",
+            "lang": "en",
+            "context": {"order_id": "12345"}
+        }
+    )
+
+# Example: Batch notifications
+async def notify_all_users(user_ids: list[int]):
+    for user_id in user_ids:
+        notificator = NotificatorService(user_id=user_id, bot=bot)
+        await notificator.notify_message(text="Important update!")
+```
+
+### 4. JSON Message Structure
 
 Create message files in your project structure:
 ```
@@ -145,7 +184,7 @@ Example `welcome.json`:
 }
 ```
 
-### 4. Using Middleware in All Handlers
+### 5. Using Middleware in All Handlers
 
 ```python
 from aiogram.types import CallbackQuery
@@ -203,7 +242,7 @@ async def send_personalized_welcome(message: Message, msg_engine, user_data: dic
     )
 ```
 
-### 5. Advanced Usage
+### 6. Advanced Usage
 
 #### Edit Messages
 
@@ -277,7 +316,7 @@ async def send_report(callback: CallbackQuery, msg_engine):
     await callback.answer("Report sent!")
 ```
 
-### 6. Building Keyboards Manually
+### 7. Building Keyboards Manually
 
 ```python
 from aiogram_smart_messages.builder import KeyboardBuilder
@@ -306,7 +345,7 @@ reply_kb = KeyboardBuilder.build_reply_keyboard(
 )
 ```
 
-### 7. Using Decorators
+### 8. Using Decorators
 
 #### Error Logging Decorator
 
@@ -334,24 +373,7 @@ async def process_payment(amount: float):
     await payment_gateway.charge(amount)
 ```
 
-#### Retry Decorator
-
-```python
-from aiogram_smart_messages.decorators import with_retry
-
-@with_retry(
-    max_attempts=3,
-    delay=1.0,
-    backoff=2.0,
-    logger=logger
-)
-async def fetch_external_api():
-    # Will retry up to 3 times with exponential backoff
-    response = await http_client.get("https://api.example.com/data")
-    return response.json()
-```
-
-### 8. Logger Configuration
+### 9. Logger Configuration
 
 ```python
 from aiogram_smart_messages.logger import get_logger
@@ -374,7 +396,7 @@ logger.error("Failed to send message")
 logger.debug("Processing callback: %s", callback_data)
 ```
 
-### 9. Working with Complex Context Objects
+### 10. Working with Complex Context Objects
 
 You can pass entire objects (like database models, dataclasses, or dictionaries) into context and access their attributes in JSON templates:
 
@@ -466,7 +488,7 @@ context = {
 # In JSON: "Date: {date:%B %d, %Y}"  → "Date: January 15, 2025"
 ```
 
-### 10. Advanced Features
+### 11. Advanced Features
 
 #### Extra Keyboard Buttons
 
@@ -681,6 +703,68 @@ Utility for building keyboards.
 #### Methods:
 - `build_inline_keyboard()` - Build inline keyboard
 - `build_reply_keyboard()` - Build reply keyboard
+
+### NotificatorService
+
+High-level service for sending notifications to users.
+
+```python
+class NotificatorService:
+    def __init__(self, user_id: int, bot: Bot):
+        # Initialize notificator for specific user
+```
+
+#### Methods:
+- `notify_message()` - Send text or smart message notification
+- `notify_document()` - Send document notification
+
+#### Usage Example:
+
+```python
+from aiogram import Bot
+from aiogram.types import FSInputFile
+from aiogram_smart_messages import NotificatorService
+
+# Initialize
+bot = Bot(token="YOUR_BOT_TOKEN")
+notificator = NotificatorService(user_id=123456789, bot=bot)
+
+# Simple text notification
+await notificator.notify_message(
+    text="Your order has been processed"
+)
+
+# Smart message notification with JSON template
+await notificator.notify_message(
+    smart_data={
+        "role": "user",
+        "namespace": "shop",
+        "menu_file": "orders",
+        "block_key": "order_complete",
+        "lang": "en",
+        "context": {"order_id": "12345", "total": 99.99}
+    }
+)
+
+# Document notification
+doc = FSInputFile("invoice.pdf")
+await notificator.notify_document(
+    document=doc,
+    caption="Your invoice for order #12345"
+)
+```
+
+**Use cases:**
+- Background job notifications (order processing, payments, etc.)
+- Scheduled notifications (reminders, alerts)
+- Admin notifications to users
+- Batch notifications to multiple users
+
+**Benefits:**
+- Clean, simple API for notifications
+- Integrates seamlessly with SmartMessageRenderer
+- Automatic error logging
+- Type-safe with full type hints
 
 ## 🤝 Contributing
 
