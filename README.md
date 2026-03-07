@@ -180,6 +180,18 @@ Example `welcome.json`:
         {"type": "callback", "text": "Profile 👤", "data": "profile"}
       ]
     ]
+  },
+  "confirm_action": {
+    "text": "Are you sure?",
+    "buttons": [
+      [
+        {"text": "✅ Yes", "style": "success"},
+        {"text": "❌ No",  "style": "danger"}
+      ],
+      [
+        {"text": "Learn more", "style": "primary", "icon_custom_emoji_id": "5368324170671202286"}
+      ]
+    ]
   }
 }
 ```
@@ -343,6 +355,18 @@ reply_kb = KeyboardBuilder.build_reply_keyboard(
     resize_keyboard=True,
     one_time_keyboard=True
 )
+
+# Reply keyboard with button styles and custom emoji (Telegram 2026+)
+styled_buttons = [
+    [
+        {"text": "Confirm", "style": "success", "icon_custom_emoji_id": "5368324170671202286"},
+        {"text": "Cancel",  "style": "danger"},
+    ],
+    [
+        {"text": "More info", "style": "primary"},
+    ],
+]
+styled_kb = KeyboardBuilder.build_reply_keyboard(styled_buttons)
 ```
 
 ### 8. Using Decorators
@@ -597,6 +621,8 @@ async def cmd_start(message: Message, msg_engine):
 ### Reply Keyboards
 - Regular text button (default)
 - `webapp` - Web App button
+- `style` — button color: `"danger"` (red), `"success"` (green), `"primary"` (blue)
+- `icon_custom_emoji_id` — custom emoji shown before the button text
 
 ## 📁 Project Structure Example
 
