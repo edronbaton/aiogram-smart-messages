@@ -135,6 +135,8 @@ class KeyboardBuilder:
                         - text (str): Display text for the button
                         - type (str, optional): 'webapp' for WebApp buttons
                         - data (str, optional): WebApp URL if type is 'webapp'
+                        - style (str, optional): Button color — 'danger', 'success', or 'primary'
+                        - icon_custom_emoji_id (str, optional): Custom emoji ID shown before the text
             resize_keyboard: Request clients to resize the keyboard vertically
                            for optimal fit. Defaults to True.
             one_time_keyboard: Request clients to hide the keyboard after use.
@@ -178,16 +180,22 @@ class KeyboardBuilder:
             
             for button in row:
                 button_text = button["text"]
-                
+                extra = {}
+                if "style" in button:
+                    extra["style"] = button["style"]
+                if "icon_custom_emoji_id" in button:
+                    extra["icon_custom_emoji_id"] = button["icon_custom_emoji_id"]
+
                 if button.get("type") == "webapp":
                     button_row.append(
                         KeyboardButton(
                             text=button_text,
-                            web_app=WebAppInfo(url=button["data"])
+                            web_app=WebAppInfo(url=button["data"]),
+                            **extra,
                         )
                     )
                 else:
-                    button_row.append(KeyboardButton(text=button_text))
+                    button_row.append(KeyboardButton(text=button_text, **extra))
             
             if button_row:  # Only add non-empty rows
                 keyboard.append(button_row)
