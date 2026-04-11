@@ -81,32 +81,40 @@ class KeyboardBuilder:
                 button_text = button["text"]
                 button_data = button["data"]
                 
+                extra = {}
+                if "style" in button:
+                    extra["style"] = button["style"]
+
                 if button_type == "callback":
                     buttons.append(
                         InlineKeyboardButton(
                             text=button_text,
-                            callback_data=button_data
+                            callback_data=button_data,
+                            **extra
                         )
                     )
                 elif button_type == "url":
                     buttons.append(
                         InlineKeyboardButton(
                             text=button_text,
-                            url=button_data
+                            url=button_data,
+                            **extra
                         )
                     )
                 elif button_type == "webapp":
                     buttons.append(
                         InlineKeyboardButton(
                             text=button_text,
-                            web_app=WebAppInfo(url=button_data)
+                            web_app=WebAppInfo(url=button_data),
+                            **extra
                         )
                     )
                 elif button_type == "switch_inline_query":
                     buttons.append(
                         InlineKeyboardButton(
                             text=button_text,
-                            switch_inline_query=button_data
+                            switch_inline_query=button_data,
+                            **extra
                         )
                     )
             
