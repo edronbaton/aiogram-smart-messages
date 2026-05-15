@@ -16,6 +16,7 @@ from aiogram.types import (
     InputMediaPhoto,
     Message,
     ReplyKeyboardMarkup,
+    InputMediaAnimation
 )
 from aiogram.exceptions import TelegramBadRequest
 
@@ -62,6 +63,7 @@ class SmartMessage:
         text: Optional[str] = None,
         caption: Optional[str] = None,
         photo: Optional[Union[FSInputFile, str]] = None,
+        animation: Optional[Union[FSInputFile, str]] = None,
         reply_markup: Optional[Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]] = None,
     ) -> None:
         """
@@ -76,6 +78,7 @@ class SmartMessage:
         self.text = text
         self.caption = caption
         self.photo = photo
+        self.animation = animation
         self.reply_markup = reply_markup
 
 
@@ -160,7 +163,14 @@ class MessageEngine:
 
         sent_message: Optional[Message] = None
 
-        if msg.photo:
+        if msg.animation:
+            sent_message = await self.bot.send_animation(
+                chat_id=chat_id,
+                animation=msg.animation,
+                caption=msg.caption or msg.text,
+                reply_markup=msg.reply_markup,
+            )
+        elif msg.photo:
             sent_message = await self.bot.send_photo(
                 chat_id=chat_id,
                 photo=msg.photo,
@@ -229,7 +239,17 @@ class MessageEngine:
         edited_message: Optional[Message] = None
 
         try:
-            if msg.photo:
+            if msg.animation:
+                edited_message = await self.bot.edit_message_media(
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    media=InputMediaAnimation(
+                        media=msg.animation,
+                        caption=msg.caption or msg.text
+                    ),
+                    reply_markup=msg.reply_markup,
+                )
+            elif msg.photo:
                 edited_message = await self.bot.edit_message_media(
                     chat_id=chat_id,
                     message_id=message_id,
@@ -317,7 +337,13 @@ class MessageEngine:
         """
         sent_message: Optional[Message] = None
 
-        if msg.photo:
+        if msg.animation:
+            sent_message = await source.reply_animation(
+                animation=msg.animation,
+                caption=msg.caption or msg.text,
+                reply_markup=msg.reply_markup,
+            )
+        elif msg.photo:
             sent_message = await source.reply_photo(
                 photo=msg.photo,
                 caption=msg.caption or msg.text,

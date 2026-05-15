@@ -128,6 +128,8 @@ class SmartMessageRenderer:
             )
 
         if context:
+            if "animation" in block:
+                block["animation"] = block["animation"].format(**context)
             if "photo" in block:
                 block["photo"] = block["photo"].format(**context)
             if "text" in block:
@@ -228,6 +230,17 @@ class SmartMessageRenderer:
                 if os.path.exists(photo_path):
                     photo_file = FSInputFile(photo_path)
 
+        animation = block.get("animation")
+        animation_file: Optional[Union[str, FSInputFile]] = None
+        
+        if animation:
+            ns_part = f"{namespace}/" if namespace else ""
+            animation_path = f"{module}/{ns_part}photos/{role}/{lang}/{photo}"
+
+            if os.path.exists(animation_path):
+                animation_file = FSInputFile(animation_path)
+
+
         reply_markup = custom_markup
         if not reply_markup and "buttons" in block:
             if block.get("reply_keyboard", False):
@@ -239,6 +252,7 @@ class SmartMessageRenderer:
             text=block.get("text"),
             caption=block.get("caption"),
             photo=photo_file,
+            animation=animation_file,
             reply_markup=reply_markup,
         )
 

@@ -16,6 +16,7 @@
 - 📬 **Notificator service** - High-level API for sending notifications to users
 - 🌍 **Multi-language support** - Built-in localization system
 - 🎨 **Context formatting** - Dynamic message content with variable substitution
+- 🎬 **Animation/GIF support** - Send and edit GIF animations via JSON templates
 - 🛡️ **Error handling** - Comprehensive logging with customizable decorators
 - 📦 **Type-safe** - Full type hints for better IDE support
 - ⚡ **Async-first** - Built for modern async/await patterns
@@ -153,6 +154,8 @@ my_bot/
 │   │       └── welcome.json
 │   └── admin/
 │       └── ...
+
+
 ```
 
 Example `welcome.json`:
@@ -192,8 +195,18 @@ Example `welcome.json`:
         {"text": "Learn more", "style": "primary", "icon_custom_emoji_id": "5368324170671202286"}
       ]
     ]
+  },
+  "welcome_animation": {
+    "animation": "welcome.gif",
+    "caption": "Welcome, {username}! 🎉",
+    "buttons": [
+      [
+        {"type": "callback", "text": "Get Started", "data": "start"}
+      ]
+    ]
   }
 }
+
 ```
 
 ### 5. Using Middleware in All Handlers
@@ -642,9 +655,12 @@ my_bot/
 │   ├── photos/
 │   │   ├── user/
 │   │   │   ├── en/
-│   │   │   │   └── menu_photo.jpg
+│   │   │   │   ├── menu_photo.jpg
+│   │   │   │   ├── welcome.gif
+│   │   │   │   └── promo_animation.gif
 │   │   │   └── ru/
-│   │   │       └── menu_photo.jpg
+│   │   │       ├── menu_photo.jpg
+│   │   │       └── welcome.gif
 │   │   └── admin/
 │   │       └── ...
 ├── main.py
@@ -688,6 +704,16 @@ async def my_operation():
 ```
 
 ## 📖 API Reference
+
+### SmartMessage
+Container for message content.
+
+**Fields:**
+- `text` — plain text
+- `caption` — caption for media messages
+- `photo` — image (FSInputFile or file_id)
+- `animation` — GIF/animation (FSInputFile or file_id) ← new in 0.4.0
+- `reply_markup` — keyboard markup
 
 ### SmartMessageRenderer
 
@@ -815,6 +841,7 @@ MIT License © 2025 Kriva
 5. **Add error labels** - Make debugging easier with descriptive error labels
 6. **Cache static content** - Messages without context are automatically cached
 7. **Use type hints** - Full type support for better IDE experience
+8. **Use animations sparingly** - GIFs grab attention but increase message size; prefer for onboarding or key moments
 
 ## 🎓 Examples
 

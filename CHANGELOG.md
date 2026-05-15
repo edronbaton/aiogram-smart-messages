@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.4.0] - 2026-05-15
+
+### Added
+- **Animation support**: New `animation` field in `SmartMessage` and `MessageEngine`
+- `send_animation`, `reply_animation`, `edit_message_media` with `InputMediaAnimation` in MessageEngine
+- Animation rendering in `SmartMessageRenderer.parse_to_smart()`
+- GIF/animation blocks in JSON message templates via `"animation"` key
+- Context formatting support for animation paths
+
 ## [0.3.0] - 2026-01-03
 
 ### Added
