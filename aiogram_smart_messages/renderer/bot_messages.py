@@ -234,11 +234,16 @@ class SmartMessageRenderer:
         animation_file: Optional[Union[str, FSInputFile]] = None
         
         if animation:
-            ns_part = f"{namespace}/" if namespace else ""
-            animation_path = f"{module}/{ns_part}photos/{role}/{lang}/{animation}"
-
-            if os.path.exists(animation_path):
-                animation_file = FSInputFile(animation_path)
+            is_probably_file_id = isinstance(animation, str) and not any(
+                c in animation for c in ["/", "\\", "."]
+            )
+            if is_probably_file_id:
+                animation_file = animation
+            else:
+                ns_part = f"{namespace}/" if namespace else ""
+                animation_path = f"{module}/{ns_part}photos/{role}/{lang}/{animation}"
+                if os.path.exists(animation_path):
+                    animation_file = FSInputFile(animation_path)
 
 
         reply_markup = custom_markup
