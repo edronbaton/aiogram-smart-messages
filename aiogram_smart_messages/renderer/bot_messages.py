@@ -235,7 +235,7 @@ class SmartMessageRenderer:
         
         if animation:
             ns_part = f"{namespace}/" if namespace else ""
-            animation_path = f"{module}/{ns_part}photos/{role}/{lang}/{photo}"
+            animation_path = f"{module}/{ns_part}photos/{role}/{lang}/{animation}"
 
             if os.path.exists(animation_path):
                 animation_file = FSInputFile(animation_path)
